@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Team Kapazität</title>
+  <style>
+    :root {
+      --green: #22c55e;
+      --green-light: #dcfce7;
+      --yellow: #eab308;
+      --yellow-light: #fef9c3;
+      --red: #ef4444;
+      --red-light: #fee2e2;
+      --absent: #94a3b8;
+      --absent-light: #f1f5f9;
+      --none: #e2e8f0;
+      --none-light: #f8fafc;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #who-select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      background: var(--surface);
+      cursor: pointer;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+    button:active { opacity: 0.7; }
+
+    .btn-primary { background: #0f172a; color: #fff; }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-danger { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    /* ── Tab navigation ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      padding: 10px 16px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      background: none;
+      border-radius: 0;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab.active {
+      color: var(--text);
+      border-bottom-color: var(--text);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Team grid ── */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .member-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+
+    .member-card.mine {
+      box-shadow: 0 0 0 3px #0f172a20;
+    }
+
+    .member-card[data-status="green"]  { border-color: var(--green); background: var(--green-light); }
+    .member-card[data-status="yellow"] { border-color: var(--yellow); background: var(--yellow-light); }
+    .member-card[data-status="red"]    { border-color: var(--red); background: var(--red-light); }
+    .member-card[data-status="absent"] { border-color: var(--absent); background: var(--absent-light); }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .member-name {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-green  { background: var(--green); color: #fff; }
+    .badge-yellow { background: var(--yellow); color: #fff; }
+    .badge-red    { background: var(--red); color: #fff; }
+    .badge-absent { background: var(--absent); color: #fff; }
+    .badge-none   { background: var(--none); color: var(--muted); }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      display: inline-block;
+    }
+
+    .card-comment {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-style: italic;
+      min-height: 1rem;
+    }
+
+    .card-updated {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .mine-label {
+      position: absolute;
+      top: -10px;
+      left: 12px;
+      background: #0f172a;
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Update modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: #00000050;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 28px;
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .modal h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .status-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .status-btn {
+      padding: 14px 10px;
+      border-radius: 10px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      transition: border-color 0.15s, transform 0.1s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-btn:hover { transform: scale(1.03); }
+    .status-btn.selected { border-color: #0f172a; box-shadow: 0 0 0 2px #0f172a40; }
+
+    .status-btn.green  { background: var(--green-light); color: #166534; }
+    .status-btn.yellow { background: var(--yellow-light); color: #854d0e; }
+    .status-btn.red    { background: var(--red-light); color: #991b1b; }
+    .status-btn.absent { background: var(--absent-light); color: #334155; }
+
+    .status-icon { font-size: 1.5rem; }
+
+    .comment-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      resize: vertical;
+      min-height: 70px;
+      font-family: inherit;
+    }
+    .comment-input:focus { outline: 2px solid #0f172a40; border-color: #0f172a; }
+
+    label { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .modal-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    /* ── Admin section ── */
+    .admin-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .admin-section h2 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .add-member-form {
+      display: flex;
+      gap: 10px;
+    }
+
+    .add-member-form input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+    }
+
+    .member-list-admin {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .member-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--bg);
+      border-radius: 8px;
+    }
+
+    /* ── Report section ── */
+    .report-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .report-controls select, .report-controls input {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+    }
+
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .report-table th {
+      background: var(--bg);
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .report-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .report-table tr:last-child td { border-bottom: none; }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+    }
+
+    /* ── Calendar ── */
+    .calendar-wrap {
+      overflow-x: auto;
+      margin-bottom: 28px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .calendar-table {
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .calendar-table th {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      padding: 6px 4px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 600;
+      min-width: 32px;
+    }
+
+    .calendar-table th.name-col {
+      text-align: left;
+      padding: 6px 14px;
+      min-width: 90px;
+      position: sticky;
+      left: 0;
+      background: var(--bg);
+      z-index: 2;
+    }
+
+    .calendar-table th.weekend { color: #94a3b8; }
+    .calendar-table th.today-col { color: var(--text); background: #e0e7ff; }
+
+    .calendar-table td {
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 0;
+      height: 32px;
+      width: 32px;
+    }
+
+    .calendar-table td.name-cell {
+      padding: 0 14px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      position: sticky;
+      left: 0;
+      background: var(--surface);
+      z-index: 1;
+      border-right: 2px solid var(--border);
+    }
+
+    .cal-cell {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+      transition: opacity 0.1s, transform 0.1s;
+    }
+
+    .cal-cell:hover { opacity: 0.75; transform: scale(0.88); border-radius: 4px; }
+
+    .cal-cell.green  { background: var(--green); }
+    .cal-cell.yellow { background: var(--yellow); }
+    .cal-cell.red    { background: var(--red); }
+    .cal-cell.absent { background: var(--absent); }
+    .cal-cell.empty  { background: transparent; }
+    .cal-cell.weekend-empty { background: #f1f5f9; }
+
+    .calendar-table td.weekend-td { background: #fafafa; }
+
+    .cal-legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .cal-legend-item { display: flex; align-items: center; gap: 5px; }
+    .cal-legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .status-options { grid-template-columns: 1fr 1fr; }
+      header h1 { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🚦 Team Kapazität</h1>
+  <div class="header-right">
+    <span style="font-size:0.8rem;color:var(--muted)">Du bist:</span>
+    <select id="who-select">
+      <option value="">— wählen —</option>
+    </select>
+    <button class="btn-primary" onclick="openMyModal()">Meinen Status setzen</button>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview', this)">Übersicht</button>
+    <button class="tab" onclick="switchTab('report', this)">Monatsauswertung</button>
+    <button class="tab" onclick="switchTab('admin', this)">Team verwalten</button>
+  </div>
+
+  <!-- OVERVIEW TAB -->
+  <div class="tab-panel active" id="tab-overview">
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Freie Kapazität</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div> Teilweise ausgelastet</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Voll ausgelastet</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--absent)"></div> Abwesend</div>
+    </div>
+    <div class="team-grid" id="team-grid">
+      <div class="empty-state">Lade Daten…</div>
+    </div>
+  </div>
+
+  <!-- REPORT TAB -->
+  <div class="tab-panel" id="tab-report">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="btn-ghost quick-range" onclick="setRange('week')">Diese Woche</button>
+        <button class="btn-ghost quick-range" onclick="setRange('lastweek')">Letzte Woche</button>
+        <button class="btn-ghost quick-range" onclick="setRange('month')">Dieser Monat</button>
+        <button class="btn-ghost quick-range" onclick="setRange('lastmonth')">Letzter Monat</button>
+        <button class="btn-ghost quick-range" onclick="setRange('year')">Dieses Jahr</button>
+        <button class="btn-ghost quick-range" onclick="setRange('lastyear')">Letztes Jahr</button>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <label style="margin:0">Von</label>
+        <input type="date" id="report-from" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.875rem" />
+        <label style="margin:0">Bis</label>
+        <input type="date" id="report-to" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.875rem" />
+        <button class="btn-primary" onclick="loadReport()">Laden</button>
+        <a id="csv-link" href="/api/export/csv" download="team-kapazitaet.csv">
+          <button class="btn-ghost" type="button">⬇ CSV exportieren</button>
+        </a>
+      </div>
+    </div>
+    <div id="report-container"><div class="empty-state">Wähle einen Zeitraum und klick auf „Laden".</div></div>
+  </div>
+
+  <!-- ADMIN TAB -->
+  <div class="tab-panel" id="tab-admin">
+    <div class="admin-section">
+      <h2>Teammitglied hinzufügen</h2>
+      <div class="add-member-form">
+        <input type="text" id="new-member-name" placeholder="Vorname" maxlength="50" />
+        <button class="btn-primary" onclick="addMember()">Hinzufügen</button>
+      </div>
+    </div>
+    <div class="admin-section">
+      <h2>Teammitglieder</h2>
+      <div class="member-list-admin" id="admin-member-list">
+        <div class="empty-state">Keine Mitglieder gefunden.</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- STATUS MODAL -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+      <h2 id="modal-title">Status setzen</h2>
+      <span id="modal-date-hint" style="font-size:0.8rem;color:var(--muted);font-weight:500"></span>
+    </div>
+    <div>
+      <label>Auslastung</label>
+      <div class="status-options" style="margin-top:10px">
+        <button class="status-btn green"  onclick="selectStatus('green')"  id="btn-green">
+          <span class="status-icon">🟢</span> Freie Kapazität
+        </button>
+        <button class="status-btn yellow" onclick="selectStatus('yellow')" id="btn-yellow">
+          <span class="status-icon">🟡</span> Teilweise ausgelastet
+        </button>
+        <button class="status-btn red"    onclick="selectStatus('red')"    id="btn-red">
+          <span class="status-icon">🔴</span> Voll ausgelastet
+        </button>
+        <button class="status-btn absent" onclick="selectStatus('absent')" id="btn-absent">
+          <span class="status-icon">⚫</span> Abwesend / Ferien
+        </button>
+      </div>
+    </div>
+    <div>
+      <label for="modal-comment">Kommentar (optional)</label>
+      <textarea class="comment-input" id="modal-comment" placeholder="z.B. Ferien, viel Projekt X, Krankheit…" style="margin-top:6px"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="document.getElementById('modal').style.display='none'">Abbrechen</button>
+      <button class="btn-primary" onclick="saveStatus()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let teamData = [];
+  let myId = null;
+  let selectedStatus = null;
+  let editingMemberId = null;
+  let editingDate = null;      // null = today, 'YYYY-MM-DD' = historic
+  let editingMemberName = '';
+
+  const MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+  // Init date range to current month
+  function isoDate(d) { return d.toISOString().slice(0,10); }
+
+  function setRange(preset) {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+    let from, to;
+    if (preset === 'week') {
+      const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      from = isoDate(new Date(y, m, d - dow));
+      to   = isoDate(new Date(y, m, d - dow + 6));
+    } else if (preset === 'lastweek') {
+      const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      from = isoDate(new Date(y, m, d - dow - 7));
+      to   = isoDate(new Date(y, m, d - dow - 1));
+    } else if (preset === 'month') {
+      from = isoDate(new Date(y, m, 1));
+      to   = isoDate(new Date(y, m + 1, 0));
+    } else if (preset === 'lastmonth') {
+      from = isoDate(new Date(y, m - 1, 1));
+      to   = isoDate(new Date(y, m, 0));
+    } else if (preset === 'year') {
+      from = `${y}-01-01`; to = `${y}-12-31`;
+    } else if (preset === 'lastyear') {
+      from = `${y-1}-01-01`; to = `${y-1}-12-31`;
+    }
+    document.getElementById('report-from').value = from;
+    document.getElementById('report-to').value = to;
+    loadReport();
+  }
+
+  // Default: this month
+  (() => {
+    const now = new Date();
+    document.getElementById('report-from').value = isoDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    document.getElementById('report-to').value   = isoDate(new Date(now.getFullYear(), now.getMonth()+1, 0));
+  })();
+
+  async function fetchTeam() {
+    const res = await fetch('/api/team');
+    teamData = await res.json();
+    renderGrid();
+    renderAdminList();
+    updateWhoSelect();
+  }
+
+  function updateWhoSelect() {
+    const sel = document.getElementById('who-select');
+    const current = sel.value || localStorage.getItem('myId') || '';
+    sel.innerHTML = '<option value="">— wählen —</option>';
+    teamData.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.name;
+      if (String(m.id) === String(current)) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    myId = sel.value ? parseInt(sel.value) : null;
+    sel.onchange = () => {
+      myId = sel.value ? parseInt(sel.value) : null;
+      localStorage.setItem('myId', sel.value);
+      renderGrid();
+    };
+  }
+
+  function statusLabel(s) {
+    return { green: 'Freie Kapazität', yellow: 'Teilweise ausgelastet', red: 'Voll ausgelastet', absent: 'Abwesend', none: 'Kein Status' }[s] || s;
+  }
+
+  function badgeClass(s) {
+    return `badge badge-${s === 'none' ? 'none' : s}`;
+  }
+
+  function formatDate(dt) {
+    if (!dt) return '';
+    const d = new Date(dt);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' }) + ', ' +
+           d.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' }) + ' Uhr';
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById('team-grid');
+    if (!teamData.length) {
+      grid.innerHTML = '<div class="empty-state">Noch keine Teammitglieder. Füge welche unter „Team verwalten" hinzu.</div>';
+      return;
+    }
+    grid.innerHTML = teamData.map(m => {
+      const isMine = myId && m.id === myId;
+      return `
+        <div class="member-card ${isMine ? 'mine' : ''}" data-status="${m.traffic_light}">
+          ${isMine ? '<span class="mine-label">Ich</span>' : ''}
+          <div class="card-top">
+            <span class="member-name">${esc(m.name)}</span>
+            <span class="${badgeClass(m.traffic_light)}">${statusLabel(m.traffic_light)}</span>
+          </div>
+          ${m.comment ? `<div class="card-comment">"${esc(m.comment)}"</div>` : '<div class="card-comment"></div>'}
+          ${m.updated_at ? `<div class="card-updated">Zuletzt: ${formatDate(m.updated_at)}</div>` : ''}
+          ${isMine ? `<div class="card-actions"><button class="btn-primary" onclick="openMyModal()" style="width:100%">Status aktualisieren</button></div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  function renderAdminList() {
+    const list = document.getElementById('admin-member-list');
+    if (!teamData.length) {
+      list.innerHTML = '<div class="empty-state">Keine Mitglieder.</div>';
+      return;
+    }
+    list.innerHTML = teamData.map(m => `
+      <div class="member-row">
+        <span>${esc(m.name)}</span>
+        <button class="btn-danger" onclick="deleteMember(${m.id}, '${esc(m.name)}')">Entfernen</button>
+      </div>`).join('');
+  }
+
+  function openMyModal() {
+    if (!myId) {
+      alert('Bitte wähle zuerst deinen Namen oben rechts aus.');
+      return;
+    }
+    const me = teamData.find(m => m.id === myId);
+    editingMemberId = myId;
+    editingMemberName = me?.name || '';
+    editingDate = null;
+    document.getElementById('modal-title').textContent = `Status setzen – ${me?.name || ''}`;
+    document.getElementById('modal-date-hint').textContent = 'Heute';
+    selectStatus(me?.traffic_light || 'green');
+    document.getElementById('modal-comment').value = me?.comment || '';
+    document.getElementById('modal').style.display = 'flex';
+  }
+
+  function openHistoricModal(memberId, memberName, date, currentStatus) {
+    editingMemberId = memberId;
+    editingMemberName = memberName;
+    editingDate = date;
+    const [y, m, d] = date.split('-');
+    const dateLabel = `${d}.${m}.${y}`;
+    document.getElementById('modal-title').textContent = `Status für ${memberName}`;
+    document.getElementById('modal-date-hint').textContent = dateLabel;
+    selectStatus(currentStatus || 'green');
+    document.getElementById('modal-comment').value = '';
+    document.getElementById('modal').style.display = 'flex';
+  }
+
+  function closeModal(e) {
+    document.getElementById('modal').style.display = 'none';
+  }
+
+  function selectStatus(s) {
+    selectedStatus = s;
+    ['green','yellow','red','absent'].forEach(x => {
+      document.getElementById(`btn-${x}`).classList.toggle('selected', x === s);
+    });
+  }
+
+  async function saveStatus() {
+    if (!selectedStatus) { alert('Bitte wähle einen Status.'); return; }
+    const comment = document.getElementById('modal-comment').value.trim();
+
+    if (editingDate) {
+      // Retrospective save
+      await fetch('/api/status/historic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ member_id: editingMemberId, date: editingDate, traffic_light: selectedStatus, comment })
+      });
+      document.getElementById('modal').style.display = 'none';
+      loadReport(); // refresh calendar
+    } else {
+      // Today
+      await fetch('/api/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ member_id: editingMemberId, traffic_light: selectedStatus, comment })
+      });
+      document.getElementById('modal').style.display = 'none';
+      fetchTeam();
+    }
+  }
+
+  async function addMember() {
+    const input = document.getElementById('new-member-name');
+    const name = input.value.trim();
+    if (!name) return;
+    const res = await fetch('/api/team', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    if (res.ok) {
+      input.value = '';
+      fetchTeam();
+    } else {
+      const err = await res.json();
+      alert(err.error || 'Fehler beim Hinzufügen');
+    }
+  }
+
+  async function deleteMember(id, name) {
+    if (!confirm(`„${name}" wirklich entfernen?`)) return;
+    await fetch(`/api/team/${id}`, { method: 'DELETE' });
+    fetchTeam();
+  }
+
+  async function loadReport() {
+    const from = document.getElementById('report-from').value;
+    const to   = document.getElementById('report-to').value;
+    if (!from || !to) { alert('Bitte Von- und Bis-Datum wählen.'); return; }
+    if (from > to) { alert('Von-Datum muss vor Bis-Datum liegen.'); return; }
+
+    const res = await fetch(`/api/report?from=${from}&to=${to}`);
+    const data = await res.json();
+    const container = document.getElementById('report-container');
+
+    const todayStr = isoDate(new Date());
+    const memberNames = [...new Set([
+      ...teamData.map(m => m.name),
+      ...data.summary.map(s => s.member_name)
+    ])].sort((a, b) => a.localeCompare(b));
+    const memberIdMap = {};
+    teamData.forEach(m => { memberIdMap[m.name] = m.id; });
+
+    // Date range helpers
+    const fromDate = new Date(from);
+    const toDate   = new Date(to);
+    const diffDays = Math.round((toDate - fromDate) / 86400000) + 1;
+
+    // Build list of all days in range
+    function allDays() {
+      const days = [];
+      const cur = new Date(fromDate);
+      while (cur <= toDate) { days.push(isoDate(cur)); cur.setDate(cur.getDate() + 1); }
+      return days;
+    }
+
+    const WEEKDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+    const STATUS_LABEL = { green:'Frei', yellow:'Teilweise', red:'Voll ausgelastet', absent:'Abwesend' };
+
+    // ── Calendar (≤ 42 days) ─────────────────────────────────────────────
+    let calHtml = '';
+    if (diffDays <= 42) {
+      const days = allDays();
+      calHtml = `
+        <p class="section-title">Kalender</p>
+        <div class="cal-legend">
+          <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--green)"></span> Frei</span>
+          <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--yellow)"></span> Teilweise</span>
+          <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--red)"></span> Voll</span>
+          <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--absent)"></span> Abwesend</span>
+          <span class="cal-legend-item" style="font-style:italic;margin-left:8px">Klick zum Bearbeiten</span>
+        </div>
+        <div class="calendar-wrap"><table class="calendar-table"><thead><tr><th class="name-col">Name</th>`;
+      days.forEach(dateStr => {
+        const d = new Date(dateStr);
+        const dow = d.getDay();
+        const isWeekend = dow === 0 || dow === 6;
+        const isToday = dateStr === todayStr;
+        const cls = isToday ? 'today-col' : isWeekend ? 'weekend' : '';
+        calHtml += `<th class="${cls}">${d.getDate()}<br><span style="font-weight:400">${WEEKDAYS[dow]}</span></th>`;
+      });
+      calHtml += `</tr></thead><tbody>`;
+      memberNames.forEach(name => {
+        const memberId = memberIdMap[name];
+        const dayMap = data.daily?.[name] || {};
+        calHtml += `<tr><td class="name-cell">${esc(name)}</td>`;
+        days.forEach(dateStr => {
+          const dow = new Date(dateStr).getDay();
+          const isWeekend = dow === 0 || dow === 6;
+          const status = dayMap[dateStr] || '';
+          const cellClass = status || (isWeekend ? 'weekend-empty' : 'empty');
+          const tdClass = isWeekend ? 'weekend-td' : '';
+          const label = status ? STATUS_LABEL[status] : 'Kein Status';
+          const clickFn = memberId
+            ? `openHistoricModal(${memberId}, '${esc(name)}', '${dateStr}', '${status}')`
+            : '';
+          calHtml += `<td class="${tdClass}"><span class="cal-cell ${cellClass}" title="${label} – ${dateStr}"${clickFn ? ` onclick="${clickFn}"` : ''}></span></td>`;
+        });
+        calHtml += `</tr>`;
+      });
+      calHtml += `</tbody></table></div>`;
+
+    // ── Monthly grid (> 42 days) ─────────────────────────────────────────
+    } else {
+      // Build months in range
+      const months = [];
+      const cur = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
+      const end = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
+      while (cur <= end) {
+        months.push({ y: cur.getFullYear(), m: cur.getMonth() + 1 });
+        cur.setMonth(cur.getMonth() + 1);
+      }
+      calHtml = `<p class="section-title">Monatsübersicht</p>
+        <div class="calendar-wrap"><table class="report-table"><thead><tr>
+          <th>Name</th>${months.map(mo => `<th>${MONTHS[mo.m-1].slice(0,3)} ${mo.y}</th>`).join('')}
+        </tr></thead><tbody>`;
+      memberNames.forEach(name => {
+        const dayMap = data.daily?.[name] || {};
+        calHtml += `<tr><td><strong>${esc(name)}</strong></td>`;
+        months.forEach(mo => {
+          const prefix = `${mo.y}-${String(mo.m).padStart(2,'0')}`;
+          const days = Object.entries(dayMap).filter(([d]) => d.startsWith(prefix));
+          const counts = { green:0, yellow:0, red:0, absent:0 };
+          days.forEach(([,s]) => { if (counts[s] !== undefined) counts[s]++; });
+          const total = counts.green + counts.yellow + counts.red + counts.absent;
+          if (total === 0) { calHtml += `<td style="color:var(--muted)">–</td>`; return; }
+          // Show colored mini-bars
+          calHtml += `<td title="Frei:${counts.green} Teilw:${counts.yellow} Voll:${counts.red} Abw:${counts.absent}">
+            <div style="display:flex;gap:2px;align-items:center">
+              ${counts.green  ? `<span style="display:inline-block;width:${Math.round(counts.green/total*28)}px;height:10px;background:var(--green);border-radius:2px"></span>` : ''}
+              ${counts.yellow ? `<span style="display:inline-block;width:${Math.round(counts.yellow/total*28)}px;height:10px;background:var(--yellow);border-radius:2px"></span>` : ''}
+              ${counts.red    ? `<span style="display:inline-block;width:${Math.round(counts.red/total*28)}px;height:10px;background:var(--red);border-radius:2px"></span>` : ''}
+              ${counts.absent ? `<span style="display:inline-block;width:${Math.round(counts.absent/total*28)}px;height:10px;background:var(--absent);border-radius:2px"></span>` : ''}
+              <span style="font-size:0.7rem;color:var(--muted);margin-left:2px">${total}T</span>
+            </div></td>`;
+        });
+        calHtml += `</tr>`;
+      });
+      calHtml += `</tbody></table></div>`;
+    }
+
+    // ── Summary table ─────────────────────────────────────────────────────
+    const fromFmt = new Date(from).toLocaleDateString('de-DE');
+    const toFmt   = new Date(to).toLocaleDateString('de-DE');
+    let table = `<p class="section-title" style="margin-top:20px">Kumulative Auswertung <span style="font-weight:400;text-transform:none;font-size:0.8rem">${fromFmt} – ${toFmt}</span></p>`;
+    if (data.summary.length === 0) {
+      table += `<div class="empty-state" style="padding:24px">Keine Einträge im gewählten Zeitraum.</div>`;
+    } else {
+      table += `<table class="report-table"><thead><tr>
+        <th>Name</th><th>🟢 Frei</th><th>🟡 Teilw.</th><th>🔴 Voll</th><th>⚫ Abwesend</th><th>Tage</th>
+      </tr></thead><tbody>`;
+      data.summary.forEach(r => {
+        const total = (r.green||0)+(r.yellow||0)+(r.red||0)+(r.absent||0);
+        table += `<tr>
+          <td><strong>${esc(r.member_name)}</strong></td>
+          <td>${r.green||0}</td><td>${r.yellow||0}</td><td>${r.red||0}</td><td>${r.absent||0}</td>
+          <td style="color:var(--muted)">${total}</td>
+        </tr>`;
+      });
+      table += `</tbody></table>
+        <p style="margin-top:10px;font-size:0.72rem;color:var(--muted)">Tage = Anzahl Tage mit diesem Status im gewählten Zeitraum</p>`;
+    }
+
+    container.innerHTML = calHtml + table;
+  }
+
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(`tab-${name}`).classList.add('active');
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Enter key for add member
+  document.getElementById('new-member-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addMember();
+  });
+
+  // Auto-refresh every 30s
+  fetchTeam();
+  setInterval(fetchTeam, 30000);
+</script>
+</body>
+</html>
