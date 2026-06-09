@@ -90,6 +90,22 @@ app.post('/api/status', async (req, res) => {
   res.json({ ok: true });
 });
 
+// DELETE current status for a member
+app.delete('/api/status/:member_id', async (req, res) => {
+  await pool.query('DELETE FROM status WHERE member_id=$1', [req.params.member_id]);
+  res.json({ ok: true });
+});
+
+// DELETE historic status for a specific day
+app.delete('/api/status/historic/:member_id/:date', async (req, res) => {
+  const { member_id, date } = req.params;
+  await pool.query(
+    'DELETE FROM status_history WHERE member_id=$1 AND DATE(recorded_at)=$2',
+    [member_id, date]
+  );
+  res.json({ ok: true });
+});
+
 // POST set status for a past date (retrospective)
 app.post('/api/status/historic', async (req, res) => {
   const { member_id, date, traffic_light, comment } = req.body;

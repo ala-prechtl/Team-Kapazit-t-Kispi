@@ -613,6 +613,7 @@
       <textarea class="comment-input" id="modal-comment" placeholder="z.B. Ferien, viel Projekt X, Krankheit…" style="margin-top:6px"></textarea>
     </div>
     <div class="modal-footer">
+      <button class="btn-danger" id="btn-delete-status" onclick="deleteStatus()" style="margin-right:auto;display:none">Eintrag löschen</button>
       <button class="btn-ghost" onclick="document.getElementById('modal').style.display='none'">Abbrechen</button>
       <button class="btn-primary" onclick="saveStatus()">Speichern</button>
     </div>
@@ -768,6 +769,9 @@
     document.getElementById('modal-date-hint').textContent = 'Heute';
     selectStatus(me?.traffic_light || 'green');
     document.getElementById('modal-comment').value = me?.comment || '';
+    // Show delete button only if status exists
+    document.getElementById('btn-delete-status').style.display =
+      (me?.traffic_light && me.traffic_light !== 'none') ? 'inline-flex' : 'none';
     document.getElementById('modal').style.display = 'flex';
   }
 
@@ -781,6 +785,9 @@
     document.getElementById('modal-date-hint').textContent = dateLabel;
     selectStatus(currentStatus || 'green');
     document.getElementById('modal-comment').value = '';
+    // Show delete button only if a status exists for this day
+    document.getElementById('btn-delete-status').style.display =
+      currentStatus ? 'inline-flex' : 'none';
     document.getElementById('modal').style.display = 'flex';
   }
 
@@ -793,6 +800,19 @@
     ['green','yellow','red','absent'].forEach(x => {
       document.getElementById(`btn-${x}`).classList.toggle('selected', x === s);
     });
+  }
+
+  async function deleteStatus() {
+    if (!confirm('Eintrag wirklich löschen?')) return;
+    if (editingDate) {
+      await fetch(`/api/status/historic/${editingMemberId}/${editingDate}`, { method: 'DELETE' });
+      document.getElementById('modal').style.display = 'none';
+      loadReport();
+    } else {
+      await fetch(`/api/status/${editingMemberId}`, { method: 'DELETE' });
+      document.getElementById('modal').style.display = 'none';
+      fetchTeam();
+    }
   }
 
   async function saveStatus() {
