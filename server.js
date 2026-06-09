@@ -20,16 +20,13 @@ function saveDB(db) {
   fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
 }
 
-// Seed test users if empty
+// Seed team members if empty
 const _db = loadDB();
 if (_db.members.length === 0) {
-  _db.members = [
-    { id: 1, name: 'Anna', created_at: new Date().toISOString() },
-    { id: 2, name: 'Ben',  created_at: new Date().toISOString() },
-    { id: 3, name: 'Clara', created_at: new Date().toISOString() },
-  ];
+  const names = ['Alexandra','Bea','Gina','Jasmin','Katja','Larissa','Nora','Romina','Sabrina','Sarah','Ursi','Yaelle'];
+  _db.members = names.map((name, i) => ({ id: i + 1, name, created_at: new Date().toISOString() }));
   saveDB(_db);
-  console.log('Seed: 3 Testnutzer angelegt (Anna, Ben, Clara)');
+  console.log('Seed: Team angelegt');
 }
 
 // ── Routes ──────────────────────────────────────────────────────────────────

@@ -741,9 +741,19 @@
     list.innerHTML = teamData.map(m => `
       <div class="member-row">
         <span>${esc(m.name)}</span>
-        <button class="btn-danger" onclick="deleteMember(${m.id}, '${esc(m.name)}')">Entfernen</button>
+        <button class="btn-danger" data-delete-id="${m.id}" data-delete-name="${esc(m.name)}">Entfernen</button>
       </div>`).join('');
   }
+
+  document.getElementById('admin-member-list').addEventListener('click', async e => {
+    const btn = e.target.closest('[data-delete-id]');
+    if (!btn) return;
+    const id = btn.dataset.deleteId;
+    const name = btn.dataset.deleteName;
+    if (!confirm(`„${name}" wirklich entfernen?`)) return;
+    await fetch(`/api/team/${id}`, { method: 'DELETE' });
+    fetchTeam();
+  });
 
   function openMyModal() {
     if (!myId) {
