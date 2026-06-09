@@ -613,8 +613,7 @@
       <textarea class="comment-input" id="modal-comment" placeholder="z.B. Ferien, viel Projekt X, Krankheit…" style="margin-top:6px"></textarea>
     </div>
     <div class="modal-footer">
-      <button class="btn-danger" id="btn-delete-status" onclick="deleteStatus()" style="margin-right:auto;display:none">Eintrag löschen</button>
-      <button class="btn-ghost" onclick="document.getElementById('modal').style.display='none'">Abbrechen</button>
+<button class="btn-ghost" onclick="document.getElementById('modal').style.display='none'">Abbrechen</button>
       <button class="btn-primary" onclick="saveStatus()">Speichern</button>
     </div>
   </div>
@@ -796,10 +795,16 @@
   }
 
   function selectStatus(s) {
+    // Click again on selected → deselect
+    if (selectedStatus === s) {
+      selectedStatus = null;
+      ['green','yellow','red','absent'].forEach(x =>
+        document.getElementById(`btn-${x}`).classList.remove('selected'));
+      return;
+    }
     selectedStatus = s;
-    ['green','yellow','red','absent'].forEach(x => {
-      document.getElementById(`btn-${x}`).classList.toggle('selected', x === s);
-    });
+    ['green','yellow','red','absent'].forEach(x =>
+      document.getElementById(`btn-${x}`).classList.toggle('selected', x === s));
   }
 
   async function deleteStatus() {
@@ -816,26 +821,28 @@
   }
 
   async function saveStatus() {
-    if (!selectedStatus) { alert('Bitte wähle einen Status.'); return; }
-    const comment = document.getElementById('modal-comment').value.trim();
+    document.getElementById('modal').style.display = 'none';
 
+    if (!selectedStatus) {
+      // No status selected → delete
+      await deleteStatus();
+      return;
+    }
+
+    const comment = document.getElementById('modal-comment').value.trim();
     if (editingDate) {
-      // Retrospective save
       await fetch('/api/status/historic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ member_id: editingMemberId, date: editingDate, traffic_light: selectedStatus, comment })
       });
-      document.getElementById('modal').style.display = 'none';
-      loadReport(); // refresh calendar
+      loadReport();
     } else {
-      // Today
       await fetch('/api/status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ member_id: editingMemberId, traffic_light: selectedStatus, comment })
       });
-      document.getElementById('modal').style.display = 'none';
       fetchTeam();
     }
   }
